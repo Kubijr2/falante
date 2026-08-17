@@ -1,0 +1,18 @@
+FROM node:20-slim
+
+WORKDIR /app
+
+# Same layer-caching trick as the backend Dockerfile — dependencies only
+# reinstall when package.json/package-lock.json actually change.
+COPY package.json package-lock.json* ./
+RUN npm install
+
+# Bind-mounted over in docker-compose.yml for live editing; this COPY makes
+# `docker build` alone still produce a complete image.
+COPY . .
+
+EXPOSE 5173
+
+# --host 0.0.0.0 is required for the dev server to be reachable from
+# outside the container (from your browser on the host machine).
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
