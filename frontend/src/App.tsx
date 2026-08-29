@@ -7,14 +7,19 @@ import { FlashcardsPage } from "@/pages/FlashcardsPage";
 import { GrammarPage } from "@/pages/GrammarPage";
 import { VocabularyPage } from "@/pages/VocabularyPage";
 import { VerbsPage } from "@/pages/VerbsPage";
+import { WritingCoachPage } from "@/pages/WritingCoachPage";
 
-// react-markdown + remark-gfm are only needed on this one page — lazy-load
-// it so that dependency doesn't bloat the main bundle for everyone else.
+// react-markdown + remark-gfm are only needed on these pages — lazy-load
+// them so that dependency doesn't bloat the main bundle for everyone else.
 const GrammarTopicPage = lazy(() =>
   import("@/pages/GrammarTopicPage").then((m) => ({ default: m.GrammarTopicPage }))
 );
 const VerbDetailPage = lazy(() =>
   import("@/pages/VerbDetailPage").then((m) => ({ default: m.VerbDetailPage }))
+);
+
+const lazyFallback = (
+  <div className="h-64 animate-pulse rounded-card border border-border dark:border-border-dark" />
 );
 
 export function App() {
@@ -29,7 +34,7 @@ export function App() {
           <Route
             path="/grammar/:slug"
             element={
-              <Suspense fallback={<div className="h-64 animate-pulse rounded-card border border-border dark:border-border-dark" />}>
+              <Suspense fallback={lazyFallback}>
                 <GrammarTopicPage />
               </Suspense>
             }
@@ -38,11 +43,12 @@ export function App() {
           <Route
             path="/verbs/:infinitive"
             element={
-              <Suspense fallback={<div className="h-64 animate-pulse rounded-card border border-border dark:border-border-dark" />}>
+              <Suspense fallback={lazyFallback}>
                 <VerbDetailPage />
               </Suspense>
             }
           />
+          <Route path="/writing" element={<WritingCoachPage />} />
         </Routes>
       </Layout>
     </BrowserRouter>

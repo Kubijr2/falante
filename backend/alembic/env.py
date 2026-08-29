@@ -3,10 +3,9 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-# Make sure our app package is importable when Alembic runs standalone.
 from app.core.config import settings
 from app.core.database import Base
-from app.models import flashcard, grammar, verb, vocabulary  # noqa: F401  (registers models on Base.metadata)
+from app.models import flashcard, grammar, verb, vocabulary, writing  # noqa: F401  (registers models on Base.metadata)
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.database_url)

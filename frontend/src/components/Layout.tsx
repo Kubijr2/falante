@@ -32,6 +32,9 @@ export function Layout({ children }: { children: ReactNode }) {
             <NavLink to="/verbs" className={navLinkClass}>
               Verbs
             </NavLink>
+            <NavLink to="/writing" className={navLinkClass}>
+              Writing
+            </NavLink>
           </nav>
         </div>
       </header>
