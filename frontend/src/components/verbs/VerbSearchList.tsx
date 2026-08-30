@@ -37,7 +37,14 @@ export function VerbSearchList({ verbs, isLoading }: VerbSearchListProps) {
         <Link key={verb.id} to={`/verbs/${verb.infinitive}`}>
           <Card className="flex items-center justify-between gap-2 transition-shadow hover:shadow-md">
             <div>
-              <p className="font-display text-base">{verb.infinitive}</p>
+              {/* font-display (Fraunces) renders too thin/low-contrast to read
+                  at text-base — its optical-size axis is designed to get
+                  delicate at small sizes. font-semibold + explicit text-ink
+                  fixes it without touching the sizes where it already looks
+                  fine (text-lg cards, text-2xl detail headings). */}
+              <p className="font-display font-semibold text-base text-ink dark:text-ink-dark">
+                {verb.infinitive}
+              </p>
               <p className="text-sm text-ink/60 dark:text-ink-dark/60">{verb.translation}</p>
             </div>
             {verb.is_irregular && <Badge tone="gold">irregular</Badge>}
