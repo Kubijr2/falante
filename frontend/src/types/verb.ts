@@ -14,12 +14,14 @@ export type TenseKey =
   | "subjunctive_present";
 
 export interface VerbDetail extends VerbListItem {
-  // tense key -> [eu, ele/ela/você, nós, eles/elas/vocês]
   conjugations: Record<TenseKey, string[]>;
 }
 
-// Single source of truth for display order + labels on the frontend,
-// mirroring app/services/conjugation_engine.py's TENSE_LABELS.
+export interface VerbFormMatch {
+  infinitive: string;
+  translation: string;
+}
+
 export const TENSE_ORDER: TenseKey[] = [
   "present",
   "preterito_perfeito",

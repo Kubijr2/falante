@@ -16,7 +16,7 @@ export function Layout({ children }: { children: ReactNode }) {
           <span className="font-display text-xl text-primary-600 dark:text-primary-400">
             Falante
           </span>
-          <nav className="flex gap-2">
+          <nav className="flex flex-wrap gap-2">
             <NavLink to="/" end className={navLinkClass}>
               Dashboard
             </NavLink>
@@ -34,6 +34,9 @@ export function Layout({ children }: { children: ReactNode }) {
             </NavLink>
             <NavLink to="/writing" className={navLinkClass}>
               Writing
+            </NavLink>
+            <NavLink to="/reading" className={navLinkClass}>
+              Reading
             </NavLink>
           </nav>
         </div>

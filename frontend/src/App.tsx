@@ -5,6 +5,7 @@ import { Layout } from "@/components/Layout";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { FlashcardsPage } from "@/pages/FlashcardsPage";
 import { GrammarPage } from "@/pages/GrammarPage";
+import { ReadingHelperPage } from "@/pages/ReadingHelperPage";
 import { VocabularyPage } from "@/pages/VocabularyPage";
 import { VerbsPage } from "@/pages/VerbsPage";
 import { WritingCoachPage } from "@/pages/WritingCoachPage";
@@ -49,6 +50,7 @@ export function App() {
             }
           />
           <Route path="/writing" element={<WritingCoachPage />} />
+          <Route path="/reading" element={<ReadingHelperPage />} />
         </Routes>
       </Layout>
     </BrowserRouter>

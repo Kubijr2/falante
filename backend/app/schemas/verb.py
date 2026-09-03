@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class VerbListItem(BaseModel):
@@ -11,5 +11,20 @@ class VerbListItem(BaseModel):
 
 
 class VerbDetail(VerbListItem):
-    # tense key (e.g. "present") -> [eu, ele/ela/você, nós, eles/elas/vocês]
     conjugations: dict[str, list[str]]
+
+
+class VerbFormLookupRequest(BaseModel):
+    forms: list[str] = Field(min_length=1, max_length=500)
+
+
+class VerbFormLookupResult(BaseModel):
+    infinitive: str
+    translation: str
+
+
+class VerbFormLookupResponse(BaseModel):
+    # Keyed by the exact form string the client sent (not lowercased) so the
+    # frontend can look up a match with a plain dict access against the
+    # token it actually rendered, no re-normalization needed on that side.
+    matches: dict[str, VerbFormLookupResult]

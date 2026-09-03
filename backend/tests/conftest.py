@@ -25,10 +25,6 @@ def db_session():
     Base.metadata.create_all(bind=engine)
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     session = TestingSessionLocal()
-    # The real app seeds grammar_topics via an Alembic data migration (see
-    # alembic/versions/..._add_grammar_topics_table.py), which this in-memory
-    # test DB bypasses entirely since it's built straight from the models.
-    # Re-seed from the same source of truth here so tests see the same data.
     session.add_all(GrammarTopic(**topic) for topic in GRAMMAR_TOPICS)
     session.add_all(
         Verb(infinitive=v["infinitive"], translation=v["translation"], is_irregular=False)

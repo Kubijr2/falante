@@ -2,7 +2,7 @@
 
 An AI-assisted Brazilian Portuguese learning platform — a companion study tool for college students, independent learners, travelers, and heritage speakers.
 
-**Status:** Milestones 1–7 complete — Vocabulary Manager, Flashcards (spaced repetition), Dashboard, Grammar Reference, Verb Conjugation Explorer, an AI-powered Grammar Tutor, an AI Writing Coach (both OpenAI), and Docker, all full-stack and tested end to end.
+**Status:** Milestones 1–8 complete — Vocabulary Manager, Flashcards (spaced repetition), Dashboard, Grammar Reference, Verb Conjugation Explorer, an AI Grammar Tutor, an AI Writing Coach, Docker, and a Reading Helper, all full-stack and tested end to end.
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full design plan and [`docs/ROADMAP.md`](docs/ROADMAP.md) for what's done and what's coming next.
 
@@ -168,7 +168,8 @@ falante/
 | 5. AI abstraction layer + Grammar Tutor (OpenAI) | ✅ Done |
 | 6. Docker | ✅ Done |
 | 7. AI Writing Coach (structured corrections + vocab suggestions) | ✅ Done |
-| 8. Reading Helper | Next |
+| 8. Reading Helper (word highlighting, save-to-vocabulary) | ✅ Done |
+| 9. Progress Analytics | Next |
 
 See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the full sequence and future ideas beyond the MVP.
 

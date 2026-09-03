@@ -1,13 +1,17 @@
 import { VocabularyCard } from "@/components/vocabulary/VocabularyCard";
+import type { VerbListItem } from "@/types/verb";
 import type { Vocabulary } from "@/types/vocabulary";
 
 interface VocabularyListProps {
   words: Vocabulary[];
   isLoading: boolean;
   onDelete: (id: number) => void;
+  // Keyed by lowercased infinitive — lets each card check in O(1) whether
+  // its word is a recognized verb.
+  verbsByInfinitive: Map<string, VerbListItem>;
 }
 
-export function VocabularyList({ words, isLoading, onDelete }: VocabularyListProps) {
+export function VocabularyList({ words, isLoading, onDelete, verbsByInfinitive }: VocabularyListProps) {
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -32,7 +36,12 @@ export function VocabularyList({ words, isLoading, onDelete }: VocabularyListPro
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {words.map((word) => (
-        <VocabularyCard key={word.id} word={word} onDelete={onDelete} />
+        <VocabularyCard
+          key={word.id}
+          word={word}
+          onDelete={onDelete}
+          matchedVerb={verbsByInfinitive.get(word.portuguese.toLowerCase())}
+        />
       ))}
     </div>
   );
