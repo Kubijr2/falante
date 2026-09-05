@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.database import get_db
+from app.core.rate_limit import limiter
 from app.repositories.writing_repository import WritingSubmissionRepository
 from app.schemas.writing import WritingSubmissionCreate, WritingSubmissionRead
 from app.services.ai.factory import AIFeatureDisabledError
@@ -15,7 +17,12 @@ def get_service(db: Session = Depends(get_db)) -> WritingCoachService:
 
 
 @router.post("/review", response_model=WritingSubmissionRead, status_code=status.HTTP_201_CREATED)
-def review_writing(payload: WritingSubmissionCreate, service: WritingCoachService = Depends(get_service)):
+@limiter.limit(lambda: f"{settings.ai_rate_limit_per_day}/day")
+def review_writing(
+    request: Request,  # required by slowapi to identify the caller — unused otherwise
+    payload: WritingSubmissionCreate,
+    service: WritingCoachService = Depends(get_service),
+):
     try:
         submission = service.review(payload.text)
     except AIFeatureDisabledError as exc:

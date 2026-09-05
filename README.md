@@ -2,9 +2,9 @@
 
 An AI-assisted Brazilian Portuguese learning platform — a companion study tool for college students, independent learners, travelers, and heritage speakers.
 
-**Status:** Milestones 1–8 complete — Vocabulary Manager, Flashcards (spaced repetition), Dashboard, Grammar Reference, Verb Conjugation Explorer, an AI Grammar Tutor, an AI Writing Coach, Docker, and a Reading Helper, all full-stack and tested end to end.
+**Status:** Milestones 1–9 complete — Vocabulary Manager, Flashcards (spaced repetition), Dashboard, Grammar Reference, Verb Conjugation Explorer, an AI Grammar Tutor, an AI Writing Coach, Docker, a Reading Helper (with verb-form recognition), and production-readiness (rate limiting, a production Docker image, verified Postgres compatibility), all full-stack and tested end to end.
 
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full design plan and [`docs/ROADMAP.md`](docs/ROADMAP.md) for what's done and what's coming next.
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full design plan, [`docs/ROADMAP.md`](docs/ROADMAP.md) for what's done and what's coming next, and [`DEPLOYMENT.md`](DEPLOYMENT.md) for the concrete steps to put this on the actual internet when you're ready.
 
 ---
 
@@ -114,9 +114,12 @@ The Grammar Tutor (on each Grammar Reference topic page) and the Writing Coach b
 AI_PROVIDER=openai
 AI_API_KEY=
 AI_MODEL=gpt-4o-mini
+AI_RATE_LIMIT_PER_DAY=10
 ```
 
 Paste your real key into `backend/.env` as `AI_API_KEY=sk-...`, then restart (`Ctrl+C` then `docker compose up`) so the container picks it up. If left blank, the app runs completely normally — both AI features show an "AI isn't configured" message instead of crashing, since AI is always optional, never required.
+
+`AI_RATE_LIMIT_PER_DAY` caps how many Tutor + Writing Coach requests a single visitor (by IP) can make per day — this matters once the app is public (see [`DEPLOYMENT.md`](DEPLOYMENT.md)) so a stranger can't run up your OpenAI bill. Locally it barely matters, but it's on by default everywhere so the behavior is the same in dev and production. Change the number and restart to adjust it — no code change needed.
 
 Adding a second provider later (Claude, Gemini) means writing one new file implementing `AIProvider` in `backend/app/services/ai/` and registering it in `factory.py` — nothing else changes, including either AI feature's own code.
 
@@ -168,8 +171,15 @@ falante/
 | 5. AI abstraction layer + Grammar Tutor (OpenAI) | ✅ Done |
 | 6. Docker | ✅ Done |
 | 7. AI Writing Coach (structured corrections + vocab suggestions) | ✅ Done |
-| 8. Reading Helper (word highlighting, save-to-vocabulary) | ✅ Done |
-| 9. Progress Analytics | Next |
+| 8. Reading Helper (word highlighting, save-to-vocabulary, verb-form recognition) | ✅ Done |
+| 9. Production-readiness (rate limiting, prod Docker image, Postgres verified) | ✅ Done |
+| 10. Real accounts / login | Next |
+| 11. Progress Analytics | Planned |
+| 12. AI Study Assistant | Planned |
+| 13. Sentence mining | Planned |
+| 14. Anki-style import/export | Planned |
+| 15. Flashcard UX overhaul (Quizlet-inspired — scope TBD) | Planned |
+| — Deployment (Render + Vercel — see [`DEPLOYMENT.md`](DEPLOYMENT.md)) | Whenever ready, not tied to a specific milestone number |
 
 See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the full sequence and future ideas beyond the MVP.
 

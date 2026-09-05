@@ -1,10 +1,31 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from slowapi.errors import RateLimitExceeded
 
 from app.api.v1 import dashboard, flashcards, grammar, tutor, verbs, vocabulary, writing
 from app.core.config import settings
+from app.core.rate_limit import limiter
 
 app = FastAPI(title=settings.app_name)
+
+app.state.limiter = limiter
+
+
+@app.exception_handler(RateLimitExceeded)
+def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+    return JSONResponse(
+        status_code=429,
+        content={
+            "detail": (
+                "You've reached today's limit for AI features on this demo "
+                f"({settings.ai_rate_limit_per_day} requests/day per visitor). "
+                "It resets tomorrow — or clone the repo and run it locally with "
+                "your own API key for unlimited use."
+            )
+        },
+    )
+
 
 app.add_middleware(
     CORSMiddleware,

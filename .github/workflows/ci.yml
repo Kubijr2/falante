@@ -38,3 +38,14 @@ jobs:
       - run: npx tsc -b
       - run: npm test
       - run: npm run build
+
+  docker-build:
+    runs-on: ubuntu-latest
+    # Catches Dockerfile breakage (bad COPY paths, missing deps, etc.)
+    # before it's discovered at deploy time. Build-only — no push, no
+    # registry credentials needed, since this is purely a "does it build"
+    # check, not part of the deploy flow itself.
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build backend production image
+        run: docker build -f backend/Dockerfile -t falante-backend:ci backend
