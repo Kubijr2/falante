@@ -44,8 +44,8 @@ class FakeProvider(AIProvider):
 
 
 @pytest.fixture()
-def submission_repo(db_session):
-    return WritingSubmissionRepository(db_session)
+def submission_repo(db_session, test_user):
+    return WritingSubmissionRepository(db_session, test_user.id)
 
 
 def test_review_persists_and_returns_submission(submission_repo):

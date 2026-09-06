@@ -14,7 +14,16 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    # extra="ignore" is the important part here: without it, pydantic-
+    # settings rejects the *entire* .env file if it contains even one key
+    # that isn't a declared field — including a harmless typo in an unused
+    # variable (this is exactly what happened with a mistyped
+    # GOOGLE_CLIENT_SECRET, which crashed the whole backend rather than
+    # just being ignored). A config file should tolerate stray or
+    # future-use variables without taking the app down.
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
 
     # Defaults to a local SQLite file — zero setup required to start developing.
     # Swap to a Postgres URL (postgresql://user:pass@host:port/dbname) for
@@ -57,6 +66,22 @@ class Settings(BaseSettings):
 
     app_name: str = "Falante API"
     api_v1_prefix: str = "/api/v1"
+
+    # Auth (Milestone 10). Google Sign-In only — the backend verifies the ID
+    # token Google issues client-side and never sees or stores a password.
+    # google_client_id must match the OAuth Client ID from Google Cloud
+    # Console; it's used to check the token was actually issued for *this*
+    # app, not some other app that also uses Google Sign-In.
+    google_client_id: str | None = None
+
+    # Signs the app's own session tokens (issued after a successful Google
+    # sign-in). MUST be overridden with a real random secret outside local
+    # dev — this default is intentionally obvious/insecure so it's never
+    # mistaken for a safe production value. Generate one with, e.g.:
+    # python3 -c "import secrets; print(secrets.token_hex(32))"
+    jwt_secret_key: str = "dev-only-insecure-secret-change-me"
+    jwt_algorithm: str = "HS256"
+    jwt_expire_minutes: int = 60 * 24 * 30  # 30 days
 
 
 @lru_cache

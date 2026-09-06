@@ -1,7 +1,7 @@
 import json
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, Text
+from sqlalchemy import DateTime, ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -23,6 +23,7 @@ class WritingSubmission(Base):
     __tablename__ = "writing_submissions"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     original_text: Mapped[str] = mapped_column(Text, nullable=False)
     overall_feedback: Mapped[str] = mapped_column(Text, nullable=False, default="")
     corrections_raw: Mapped[str | None] = mapped_column("corrections", Text, nullable=True)

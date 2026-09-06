@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 
-from app.api.v1 import dashboard, flashcards, grammar, tutor, verbs, vocabulary, writing
+from app.api.v1 import auth, dashboard, flashcards, grammar, tutor, verbs, vocabulary, writing
 from app.core.config import settings
 from app.core.rate_limit import limiter
 
@@ -35,6 +35,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth.router, prefix=settings.api_v1_prefix)
 app.include_router(vocabulary.router, prefix=settings.api_v1_prefix)
 app.include_router(flashcards.router, prefix=settings.api_v1_prefix)
 app.include_router(dashboard.router, prefix=settings.api_v1_prefix)

@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
+import { RequireAuth } from "@/components/auth/RequireAuth";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useTutorChat, useTutorStatus } from "@/hooks/useTutor";
@@ -10,7 +11,7 @@ interface TutorPanelProps {
   topicSlug: string;
 }
 
-export function TutorPanel({ topicSlug }: TutorPanelProps) {
+function TutorChatBody({ topicSlug }: TutorPanelProps) {
   const { data: status, isLoading: statusLoading } = useTutorStatus();
   const { messages, sendQuestion, isSending, error } = useTutorChat(topicSlug);
   const [draft, setDraft] = useState("");
@@ -92,5 +93,13 @@ export function TutorPanel({ topicSlug }: TutorPanelProps) {
         </Button>
       </form>
     </Card>
+  );
+}
+
+export function TutorPanel({ topicSlug }: TutorPanelProps) {
+  return (
+    <RequireAuth featureName="the Tutor">
+      <TutorChatBody topicSlug={topicSlug} />
+    </RequireAuth>
   );
 }

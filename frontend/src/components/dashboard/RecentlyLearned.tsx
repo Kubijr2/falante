@@ -1,9 +1,15 @@
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
-import type { Vocabulary } from "@/types/vocabulary";
+
+interface RecentlyLearnedWord {
+  id: number;
+  portuguese: string;
+  english: string;
+  mastery_level: number;
+}
 
 interface RecentlyLearnedProps {
-  words: Vocabulary[];
+  words: RecentlyLearnedWord[];
 }
 
 export function RecentlyLearned({ words }: RecentlyLearnedProps) {

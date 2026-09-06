@@ -2,8 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.core.current_user import get_current_user
 from app.core.database import get_db
 from app.core.rate_limit import limiter
+from app.models.user import User
 from app.repositories.writing_repository import WritingSubmissionRepository
 from app.schemas.writing import WritingSubmissionCreate, WritingSubmissionRead
 from app.services.ai.factory import AIFeatureDisabledError
@@ -12,8 +14,10 @@ from app.services.writing_coach_service import AIResponseParseError, WritingCoac
 router = APIRouter(prefix="/writing", tags=["writing"])
 
 
-def get_service(db: Session = Depends(get_db)) -> WritingCoachService:
-    return WritingCoachService(WritingSubmissionRepository(db))
+def get_service(
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
+) -> WritingCoachService:
+    return WritingCoachService(WritingSubmissionRepository(db, current_user.id))
 
 
 @router.post("/review", response_model=WritingSubmissionRead, status_code=status.HTTP_201_CREATED)

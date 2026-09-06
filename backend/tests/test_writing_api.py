@@ -33,17 +33,17 @@ class FakeProvider(AIProvider):
         return self.reply
 
 
-def _override_with_fake(db_session, reply: str = VALID_RESPONSE):
+def _override_with_fake(db_session, user_id: int, reply: str = VALID_RESPONSE):
     def override_service():
         return WritingCoachService(
-            WritingSubmissionRepository(db_session), provider_factory=lambda: FakeProvider(reply)
+            WritingSubmissionRepository(db_session, user_id), provider_factory=lambda: FakeProvider(reply)
         )
 
     app.dependency_overrides[writing.get_service] = override_service
 
 
-def test_review_endpoint_returns_structured_result(client, db_session):
-    _override_with_fake(db_session)
+def test_review_endpoint_returns_structured_result(client, db_session, test_user):
+    _override_with_fake(db_session, test_user.id)
     try:
         response = client.post("/api/v1/writing/review", json={"text": "Eu gosta de café."})
         assert response.status_code == 201
@@ -62,12 +62,12 @@ def test_review_endpoint_rejects_empty_text(client):
     assert response.status_code == 422
 
 
-def test_review_endpoint_503_when_ai_disabled(client, db_session):
+def test_review_endpoint_503_when_ai_disabled(client, db_session, test_user):
     def raise_disabled():
         raise AIFeatureDisabledError("not configured")
 
     def override_service():
-        return WritingCoachService(WritingSubmissionRepository(db_session), provider_factory=raise_disabled)
+        return WritingCoachService(WritingSubmissionRepository(db_session, test_user.id), provider_factory=raise_disabled)
 
     app.dependency_overrides[writing.get_service] = override_service
     try:
@@ -77,8 +77,8 @@ def test_review_endpoint_503_when_ai_disabled(client, db_session):
         app.dependency_overrides.pop(writing.get_service, None)
 
 
-def test_review_endpoint_502_on_malformed_ai_response(client, db_session):
-    _override_with_fake(db_session, reply="not valid json")
+def test_review_endpoint_502_on_malformed_ai_response(client, db_session, test_user):
+    _override_with_fake(db_session, test_user.id, reply="not valid json")
     try:
         response = client.post("/api/v1/writing/review", json={"text": "Some text"})
         assert response.status_code == 502
@@ -86,8 +86,8 @@ def test_review_endpoint_502_on_malformed_ai_response(client, db_session):
         app.dependency_overrides.pop(writing.get_service, None)
 
 
-def test_list_and_get_submission(client, db_session):
-    _override_with_fake(db_session)
+def test_list_and_get_submission(client, db_session, test_user):
+    _override_with_fake(db_session, test_user.id)
     try:
         create_response = client.post("/api/v1/writing/review", json={"text": "Eu gosta de café."})
         submission_id = create_response.json()["id"]

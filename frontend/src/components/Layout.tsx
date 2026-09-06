@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { NavLink } from "react-router-dom";
 
+import { UserMenu } from "@/components/auth/UserMenu";
+
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   `rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
     isActive
@@ -12,7 +14,7 @@ export function Layout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-base dark:bg-base-dark">
       <header className="border-b border-border dark:border-border-dark">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-6 py-4">
           <span className="font-display text-xl text-primary-600 dark:text-primary-400">
             Falante
           </span>
@@ -39,6 +41,7 @@ export function Layout({ children }: { children: ReactNode }) {
               Reading
             </NavLink>
           </nav>
+          <UserMenu />
         </div>
       </header>
       <main className="mx-auto max-w-5xl px-6 py-8">{children}</main>

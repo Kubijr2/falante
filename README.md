@@ -2,7 +2,7 @@
 
 An AI-assisted Brazilian Portuguese learning platform — a companion study tool for college students, independent learners, travelers, and heritage speakers.
 
-**Status:** Milestones 1–9 complete — Vocabulary Manager, Flashcards (spaced repetition), Dashboard, Grammar Reference, Verb Conjugation Explorer, an AI Grammar Tutor, an AI Writing Coach, Docker, a Reading Helper (with verb-form recognition), and production-readiness (rate limiting, a production Docker image, verified Postgres compatibility), all full-stack and tested end to end.
+**Status:** Milestones 1–10 complete — Vocabulary Manager, Flashcards (spaced repetition), Dashboard, Grammar Reference, Verb Conjugation Explorer, an AI Grammar Tutor, an AI Writing Coach, Docker, a Reading Helper (with verb-form recognition), production-readiness, and real accounts via Google Sign-In (with per-user data), all full-stack and tested end to end.
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full design plan, [`docs/ROADMAP.md`](docs/ROADMAP.md) for what's done and what's coming next, and [`DEPLOYMENT.md`](DEPLOYMENT.md) for the concrete steps to put this on the actual internet when you're ready.
 
@@ -77,7 +77,18 @@ Unzip the milestone zip and copy its `falante/` contents over your existing `fal
 docker compose up --build
 ```
 
-`--build` is safe every time — Docker skips rebuilding anything unchanged. New Alembic migrations apply automatically on backend startup.
+`--build` is safe every time. New Alembic migrations apply automatically on backend startup.
+
+**If a milestone added a new Python package**, `--build` alone is enough — the backend has no persistent volume shadowing its installed packages, so a fresh image build picks up the new dependency correctly.
+
+**If a milestone added a new npm package**, `--build` alone is *not* enough — `frontend_node_modules` is a named Docker volume (kept separate from the bind-mounted code specifically so the container's Linux-built packages don't get overwritten by your host's), and that volume's old content persists across rebuilds regardless of what changed in `package.json`. You'll see an error like `Failed to resolve import "..."` for the new package if you skip this. Run:
+
+```bash
+docker compose down -v
+docker compose up --build
+```
+
+`-v` removes that stale volume so npm actually reinstalls. This is safe — it does not touch `backend/falante.db` (a bind-mounted file, not a volume), so no data is lost. I'll call it out explicitly whenever a milestone adds an npm package, but this is the fix any time you see an import-resolution error that shouldn't be there.
 
 ### 3. Run the tests
 
@@ -122,6 +133,69 @@ Paste your real key into `backend/.env` as `AI_API_KEY=sk-...`, then restart (`C
 `AI_RATE_LIMIT_PER_DAY` caps how many Tutor + Writing Coach requests a single visitor (by IP) can make per day — this matters once the app is public (see [`DEPLOYMENT.md`](DEPLOYMENT.md)) so a stranger can't run up your OpenAI bill. Locally it barely matters, but it's on by default everywhere so the behavior is the same in dev and production. Change the number and restart to adjust it — no code change needed.
 
 Adding a second provider later (Claude, Gemini) means writing one new file implementing `AIProvider` in `backend/app/services/ai/` and registering it in `factory.py` — nothing else changes, including either AI feature's own code.
+
+---
+
+## Setting up Google Sign-In (Milestone 10, one-time)
+
+Falante uses "Sign in with Google" for accounts — there's no password system to manage. This needs a one-time, free setup in Google Cloud Console to get a **Client ID**, which is what tells Google "this login attempt is for *my* app."
+
+### 1. Create the OAuth consent screen
+
+1. Go to [console.cloud.google.com](https://console.cloud.google.com/) and create a project (or use an existing one) — free, no billing required for this.
+2. Go to **APIs & Services → OAuth consent screen**.
+3. Choose **External** user type (unless you have a Google Workspace account).
+4. Fill in the required fields (app name — "Falante" is fine, your email for support/developer contact). The default scopes (email, profile, openid) are all you need — don't add anything else.
+5. Save.
+
+**Important, easy to miss:** a new external app starts in **Testing** mode, which means only email addresses you explicitly add as "test users" can actually sign in — anyone else gets blocked by Google, not by your app. If you want other people (recruiters, friends) to try the live demo, either:
+- Add their email addresses individually under **Test users** (works immediately, no review, good for a handful of people), or
+- **Publish** the app to Production (Google may ask for a verification review for some scopes, but basic email/profile/openid scopes like this app uses typically don't require one — worth checking Google's current requirements when you get there).
+
+### 2. Create the Client ID
+
+1. Go to **APIs & Services → Credentials → Create Credentials → OAuth client ID**.
+2. Application type: **Web application**. Name it "Falante" (or anything).
+3. Under **Authorized JavaScript origins**, add:
+   - `http://localhost:5173` (local dev)
+   - Your real frontend URL once deployed (e.g. `https://falante.vercel.app`) — you can add this later and edit the credential, no need to redo this whole process.
+4. Create. Google shows you a **Client ID** that looks like `123456-abc.apps.googleusercontent.com`.
+
+### 3. Put the Client ID in both `.env` files
+
+The *same* Client ID goes in two places — the backend uses it to verify tokens are meant for your app, the frontend uses it to render the actual Google button:
+
+```bash
+# backend/.env
+GOOGLE_CLIENT_ID=123456-abc.apps.googleusercontent.com
+
+# frontend/.env
+VITE_GOOGLE_CLIENT_ID=123456-abc.apps.googleusercontent.com
+```
+
+Restart the stack (`docker compose up` again) so both containers pick up the new values. Also set a real `JWT_SECRET_KEY` in `backend/.env` while you're there — see the comment in `.env.example` for how to generate one; the default value is deliberately insecure so you don't forget to change it.
+
+### What's gated behind login
+
+Vocabulary, Flashcards, the Writing Coach, and the Reading Helper all require being logged in — that's your personal data. **The Dashboard is the homepage and is viewable by anyone** — logged out, it shows an intro to the app and an example dashboard with clearly-labeled sample data; logged in, it shows your real stats. Grammar Reference and the Verb Explorer stay fully public and browsable without an account. The Grammar Tutor is a special case: the *article* you're reading stays public, but the chat panel itself shows a "log in to use the tutor" prompt in its place if you're not signed in.
+
+### Troubleshooting sign-in
+
+If clicking the Google button gets you "Couldn't sign you in" or similar, the error message itself now tells you the real reason (as of the latest fix) — check what it actually says first. The most common causes, in order of likelihood:
+
+1. **You edited `.env` but didn't restart the containers.** Both `GOOGLE_CLIENT_ID` and `JWT_SECRET_KEY` are read once when the backend starts — `docker compose up` again (or `Ctrl+C` then back up) after any `.env` change.
+2. **The Client ID doesn't match between the two `.env` files.** `backend/.env`'s `GOOGLE_CLIENT_ID` and `frontend/.env`'s `VITE_GOOGLE_CLIENT_ID` must be the exact same value — a typo or copying the Client Secret into one of them by mistake is an easy way to end up with a mismatch.
+3. **`CORS_ORIGINS` doesn't include the URL you're actually visiting the frontend from.** If the error says something about not reaching the server at all (rather than a specific rejection reason), check the browser's DevTools → Network tab for a CORS error, and confirm `backend/.env`'s `CORS_ORIGINS` includes that exact origin.
+4. **You're not an added test user yet**, if the Google consent screen itself is still in "Testing" mode (see the setup steps above) — this shows as a Google-side error before you even get back to Falante, not the "couldn't sign in" message.
+
+If none of those explain it, check `docker compose logs backend` — unexpected verification failures (including network issues reaching Google from inside the container) are now logged there with the full error, even though the browser only sees a clean summary.
+
+**"Couldn't reach the server" specifically, with the backend container missing entirely from `docker compose ps`:** check `docker compose logs backend` for a crash on startup. Two real causes we hit, both fixed as of the latest update:
+
+- **Any typo in `backend/.env` used to crash the entire backend**, not just fail to use that one setting — a misspelled variable name (even one nothing reads, like an extra `GOOGLE_CLIENT_SECRET` saved "just in case") made the whole app refuse to start with a `pydantic_core.ValidationError: extra_forbidden`. Fixed — `config.py` now explicitly ignores unrecognized `.env` keys instead of rejecting the whole file.
+- **The Milestone 10 auth migration used to fail on any database with real pre-existing data**, in two distinct ways depending on exactly which retry you were on: `sqlite3.OperationalError: table users already exists`, a `NOT NULL constraint failed`, or `table _alembic_tmp_flashcard_reviews already exists`. All three come from the same root cause — SQLite's DDL isn't transactional, so a migration that fails partway leaves whatever it already did in place, and a naive retry crashes trying to redo that same step. Fixed — the migration now checks for and cleans up every leftover artifact a real interrupted attempt could produce (an already-created table, an already-added column, or a stale internal scratch table from SQLite's batch-alter process) before doing that step again, so it's safe to retry from any intermediate state. You don't need to manually delete `backend/falante.db` for this migration to succeed, though doing so is also a fine (zero-risk) way to guarantee a clean slate if you'd rather not think about it.
+
+If you're on an older copy of these files, either issue can still show up — updating to the latest versions resolves both.
 
 ---
 
@@ -173,8 +247,8 @@ falante/
 | 7. AI Writing Coach (structured corrections + vocab suggestions) | ✅ Done |
 | 8. Reading Helper (word highlighting, save-to-vocabulary, verb-form recognition) | ✅ Done |
 | 9. Production-readiness (rate limiting, prod Docker image, Postgres verified) | ✅ Done |
-| 10. Real accounts / login | Next |
-| 11. Progress Analytics | Planned |
+| 10. Real accounts / login (Google Sign-In, per-user data) | ✅ Done |
+| 11. Progress Analytics | Next |
 | 12. AI Study Assistant | Planned |
 | 13. Sentence mining | Planned |
 | 14. Anki-style import/export | Planned |

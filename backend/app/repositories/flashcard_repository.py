@@ -10,42 +10,41 @@ from app.models.vocabulary import Vocabulary
 
 
 class FlashcardRepository:
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, user_id: int):
         self.db = db
+        self.user_id = user_id
 
     def create_review(self, review: FlashcardReview) -> FlashcardReview:
+        review.user_id = self.user_id
         self.db.add(review)
         self.db.commit()
         self.db.refresh(review)
         return review
 
     def count_total(self) -> int:
-        stmt = select(func.count()).select_from(FlashcardReview)
+        stmt = (
+            select(func.count())
+            .select_from(FlashcardReview)
+            .where(FlashcardReview.user_id == self.user_id)
+        )
         return self.db.execute(stmt).scalar_one()
 
     def all_review_dates(self) -> list[date]:
-        """
-        Every calendar date that had at least one review. SQLite and Postgres
-        both support func.date() to truncate a datetime column, so this stays
-        portable across the DB swap described in the architecture doc.
-        """
-        stmt = select(func.date(FlashcardReview.reviewed_at)).distinct()
+        stmt = (
+            select(func.date(FlashcardReview.reviewed_at))
+            .where(FlashcardReview.user_id == self.user_id)
+            .distinct()
+        )
         rows = self.db.execute(stmt).scalars().all()
         return [d if isinstance(d, date) else date.fromisoformat(d) for d in rows]
 
     def recently_learned_vocabulary(
         self, results: tuple[ReviewResult, ...], limit: int
     ) -> list[Vocabulary]:
-        """
-        Most recent distinct words whose review result was in `results`
-        (i.e. mastery increased — see PROGRESS_RESULTS in dashboard_service.py).
-        Dedupes by vocabulary, keeping only the most recent qualifying review
-        per word.
-        """
         stmt = (
             select(FlashcardReview)
             .options(joinedload(FlashcardReview.vocabulary))
-            .where(FlashcardReview.result.in_(results))
+            .where(FlashcardReview.result.in_(results), FlashcardReview.user_id == self.user_id)
             .order_by(FlashcardReview.reviewed_at.desc())
         )
         reviews = self.db.execute(stmt).scalars().all()

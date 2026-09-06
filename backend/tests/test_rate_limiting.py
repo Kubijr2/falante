@@ -75,7 +75,7 @@ def test_tutor_ask_blocks_requests_over_the_limit(client, db_session, monkeypatc
         app.dependency_overrides.pop(tutor.get_service, None)
 
 
-def test_writing_review_is_also_rate_limited(client, db_session, monkeypatch):
+def test_writing_review_is_also_rate_limited(client, db_session, test_user, monkeypatch):
     import json as jsonlib
 
     from app.api.v1 import writing
@@ -96,7 +96,7 @@ def test_writing_review_is_also_rate_limited(client, db_session, monkeypatch):
             return valid_response
 
     app.dependency_overrides[writing.get_service] = lambda: WritingCoachService(
-        WritingSubmissionRepository(db_session), provider_factory=lambda: FakeProvider()
+        WritingSubmissionRepository(db_session, test_user.id), provider_factory=lambda: FakeProvider()
     )
     try:
         first = client.post("/api/v1/writing/review", json={"text": "Eu gosto de café."})

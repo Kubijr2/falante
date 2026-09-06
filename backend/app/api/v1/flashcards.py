@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
+from app.core.current_user import get_current_user
 from app.core.database import get_db
+from app.models.user import User
 from app.repositories.flashcard_repository import FlashcardRepository
 from app.repositories.vocabulary_repository import VocabularyRepository
 from app.schemas.flashcard import ReviewSubmit
@@ -12,12 +14,18 @@ from app.services.vocabulary_service import VocabularyService
 router = APIRouter(prefix="/flashcards", tags=["flashcards"])
 
 
-def get_service(db: Session = Depends(get_db)) -> FlashcardService:
-    return FlashcardService(VocabularyRepository(db), FlashcardRepository(db))
+def get_service(
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
+) -> FlashcardService:
+    return FlashcardService(
+        VocabularyRepository(db, current_user.id), FlashcardRepository(db, current_user.id)
+    )
 
 
-def get_vocab_service(db: Session = Depends(get_db)) -> VocabularyService:
-    return VocabularyService(VocabularyRepository(db))
+def get_vocab_service(
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
+) -> VocabularyService:
+    return VocabularyService(VocabularyRepository(db, current_user.id))
 
 
 @router.get("/due", response_model=list[VocabularyRead])

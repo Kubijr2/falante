@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.core.current_user import get_current_user
 from app.core.database import get_db
 from app.core.rate_limit import limiter
 from app.repositories.grammar_repository import GrammarRepository
@@ -19,10 +20,13 @@ def get_service(db: Session = Depends(get_db)) -> TutorService:
 
 @router.get("/status", response_model=TutorStatus)
 def get_status():
+    # Deliberately public/unauthenticated — it's a single boolean with
+    # nothing sensitive in it, and the frontend needs it to decide what to
+    # show *before* knowing whether someone's logged in.
     return TutorStatus(enabled=bool(settings.ai_api_key))
 
 
-@router.post("/ask", response_model=TutorResponse)
+@router.post("/ask", response_model=TutorResponse, dependencies=[Depends(get_current_user)])
 @limiter.limit(lambda: f"{settings.ai_rate_limit_per_day}/day")
 def ask_tutor(
     request: Request,  # required by slowapi to identify the caller — unused otherwise

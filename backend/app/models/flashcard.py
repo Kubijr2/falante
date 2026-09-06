@@ -15,15 +15,14 @@ class ReviewResult(str, enum.Enum):
 
 
 class FlashcardReview(Base):
-    """
-    One row per review event. This table is intentionally append-only —
-    it becomes the data source for Progress Analytics later (Milestone 8)
-    without needing a new table.
-    """
-
     __tablename__ = "flashcard_reviews"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    # Denormalized alongside vocabulary_id (not just derivable via a join)
+    # so dashboard/streak queries — which scan reviews directly and don't
+    # otherwise need the vocabulary table — can filter by user without a
+    # join on every request.
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     vocabulary_id: Mapped[int] = mapped_column(ForeignKey("vocabulary.id"), nullable=False)
     reviewed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)

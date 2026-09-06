@@ -8,20 +8,19 @@ from app.models.vocabulary import Vocabulary
 
 class VocabularyRepository:
     """
-    Owns every direct SQLAlchemy query for the Vocabulary table.
-    Services depend on this instead of touching `db.query(...)` themselves —
-    if we ever change ORMs or add caching, only this file changes.
+    Scoped to one user for the lifetime of the request — every query is
+    automatically filtered to `user_id`, and `create()` stamps it on new
+    rows. This is what makes it structurally impossible for a route to
+    "forget" the user filter on any one query: it isn't a parameter you
+    might omit, it's baked into the repository instance itself.
     """
 
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, user_id: int):
         self.db = db
+        self.user_id = user_id
 
-    def list(
-        self,
-        category: str | None = None,
-        search: str | None = None,
-    ) -> list[Vocabulary]:
-        stmt = select(Vocabulary)
+    def list(self, category: str | None = None, search: str | None = None) -> list[Vocabulary]:
+        stmt = select(Vocabulary).where(Vocabulary.user_id == self.user_id)
         if category:
             stmt = stmt.where(Vocabulary.category == category)
         if search:
@@ -33,9 +32,16 @@ class VocabularyRepository:
         return list(self.db.execute(stmt).scalars().all())
 
     def get(self, vocabulary_id: int) -> Vocabulary | None:
-        return self.db.get(Vocabulary, vocabulary_id)
+        # Filtering by user_id here (not just id) means a mismatched id
+        # simply looks like "not found" rather than leaking whether that id
+        # belongs to someone else.
+        stmt = select(Vocabulary).where(
+            Vocabulary.id == vocabulary_id, Vocabulary.user_id == self.user_id
+        )
+        return self.db.execute(stmt).scalar_one_or_none()
 
     def create(self, vocabulary: Vocabulary) -> Vocabulary:
+        vocabulary.user_id = self.user_id
         self.db.add(vocabulary)
         self.db.commit()
         self.db.refresh(vocabulary)
@@ -51,15 +57,24 @@ class VocabularyRepository:
         self.db.commit()
 
     def due_for_review(self, now) -> list[Vocabulary]:
-        stmt = select(Vocabulary).where(Vocabulary.next_review_at <= now)
+        stmt = select(Vocabulary).where(
+            Vocabulary.user_id == self.user_id, Vocabulary.next_review_at <= now
+        )
         return list(self.db.execute(stmt).scalars().all())
 
     def count_total(self) -> int:
-        stmt = select(func.count()).select_from(Vocabulary)
+        stmt = (
+            select(func.count())
+            .select_from(Vocabulary)
+            .where(Vocabulary.user_id == self.user_id)
+        )
         return self.db.execute(stmt).scalar_one()
 
     def mastery_distribution(self) -> dict[int, int]:
-        """Count of words at each mastery level, 0-5, always including empty levels."""
-        stmt = select(Vocabulary.mastery_level, func.count()).group_by(Vocabulary.mastery_level)
+        stmt = (
+            select(Vocabulary.mastery_level, func.count())
+            .where(Vocabulary.user_id == self.user_id)
+            .group_by(Vocabulary.mastery_level)
+        )
         counts = dict(self.db.execute(stmt).all())
         return {level: counts.get(level, 0) for level in range(6)}
