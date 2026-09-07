@@ -3,7 +3,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 
-from app.api.v1 import auth, dashboard, flashcards, grammar, tutor, verbs, vocabulary, writing
+from app.api.v1 import (
+    analytics,
+    auth,
+    dashboard,
+    flashcards,
+    grammar,
+    tutor,
+    verbs,
+    vocabulary,
+    writing,
+)
 from app.core.config import settings
 from app.core.rate_limit import limiter
 
@@ -43,6 +53,7 @@ app.include_router(grammar.router, prefix=settings.api_v1_prefix)
 app.include_router(verbs.router, prefix=settings.api_v1_prefix)
 app.include_router(tutor.router, prefix=settings.api_v1_prefix)
 app.include_router(writing.router, prefix=settings.api_v1_prefix)
+app.include_router(analytics.router, prefix=settings.api_v1_prefix)
 
 
 @app.get("/health")

@@ -59,3 +59,51 @@ class FlashcardRepository:
             if len(recently_learned) >= limit:
                 break
         return recently_learned
+
+    def counts_by_day(self, start_date: date | None) -> list[tuple[str, int]]:
+        """Reviews per day — raw material for the review-activity heatmap."""
+        stmt = select(func.date(FlashcardReview.reviewed_at), func.count()).where(
+            FlashcardReview.user_id == self.user_id
+        )
+        if start_date is not None:
+            stmt = stmt.where(FlashcardReview.reviewed_at >= start_date)
+        stmt = stmt.group_by(func.date(FlashcardReview.reviewed_at)).order_by(
+            func.date(FlashcardReview.reviewed_at)
+        )
+        return list(self.db.execute(stmt).all())
+
+    def counts_by_day_and_result(
+        self, start_date: date | None
+    ) -> list[tuple[str, ReviewResult, int]]:
+        """Reviews per day, broken down by result — raw material for the review-quality trend."""
+        stmt = select(
+            func.date(FlashcardReview.reviewed_at), FlashcardReview.result, func.count()
+        ).where(FlashcardReview.user_id == self.user_id)
+        if start_date is not None:
+            stmt = stmt.where(FlashcardReview.reviewed_at >= start_date)
+        stmt = stmt.group_by(func.date(FlashcardReview.reviewed_at), FlashcardReview.result)
+        return list(self.db.execute(stmt).all())
+
+    def all_reviews_ordered(self) -> list[tuple[int, date, ReviewResult]]:
+        """
+        Every review (vocabulary_id, date, result), full history in
+        chronological order — needed to replay mastery-level changes for
+        the mastery trend chart. Always full history regardless of any
+        display range, for the same reason list_id_and_created_date() is:
+        an accurate trend for a filtered window still needs to know the
+        correct starting state going into that window.
+        """
+        stmt = (
+            select(
+                FlashcardReview.vocabulary_id,
+                func.date(FlashcardReview.reviewed_at),
+                FlashcardReview.result,
+            )
+            .where(FlashcardReview.user_id == self.user_id)
+            .order_by(FlashcardReview.reviewed_at)
+        )
+        rows = self.db.execute(stmt).all()
+        return [
+            (vid, d if isinstance(d, date) else date.fromisoformat(d), result)
+            for vid, d, result in rows
+        ]

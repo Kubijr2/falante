@@ -12,7 +12,7 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { authApi } from "@/services/api/auth";
 import { AUTH_UNAUTHORIZED_EVENT, authStorage } from "@/utils/authStorage";
 
-const fakeUser = { id: 1, email: "cole@example.com", name: "Cole", picture_url: null };
+const fakeUser = { id: 1, email: "cole@example.com", name: "Cole", picture_url: null, dashboard_widgets: [] };
 
 function Probe() {
   const { user, isAuthenticated, isLoading, loginWithGoogleIdToken, logout } = useAuth();

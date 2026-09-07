@@ -11,4 +11,9 @@ export const authApi = {
     const { data } = await apiClient.get<AuthUser>("/auth/me");
     return data;
   },
+
+  updateDashboardWidgets: async (widgets: string[]): Promise<AuthUser> => {
+    const { data } = await apiClient.patch<AuthUser>("/auth/me/dashboard-widgets", { widgets });
+    return data;
+  },
 };

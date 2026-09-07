@@ -12,6 +12,7 @@ class UserRead(BaseModel):
     email: str
     name: str
     picture_url: str | None
+    dashboard_widgets: list[str]
 
 
 class AuthResponse(BaseModel):

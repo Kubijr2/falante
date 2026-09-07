@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from sqlalchemy import select
+from datetime import date
+
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models.writing import WritingSubmission
@@ -32,3 +34,21 @@ class WritingSubmissionRepository:
             WritingSubmission.id == submission_id, WritingSubmission.user_id == self.user_id
         )
         return self.db.execute(stmt).scalar_one_or_none()
+
+    def list_dates_and_corrections(self, start_date: date | None) -> list[tuple[date, str | None]]:
+        """
+        Every submission's date + raw corrections JSON — used to tally
+        grammar-vs-wording correction counts per day for the writing
+        insights chart. Returned raw (not parsed) since parsing the JSON is
+        the service layer's job, not the repository's.
+        """
+        stmt = select(
+            func.date(WritingSubmission.created_at), WritingSubmission.corrections_raw
+        ).where(WritingSubmission.user_id == self.user_id)
+        if start_date is not None:
+            stmt = stmt.where(WritingSubmission.created_at >= start_date)
+        rows = self.db.execute(stmt).all()
+        return [
+            (d if isinstance(d, date) else date.fromisoformat(d), corrections_raw)
+            for d, corrections_raw in rows
+        ]

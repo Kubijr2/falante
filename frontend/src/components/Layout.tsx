@@ -40,6 +40,9 @@ export function Layout({ children }: { children: ReactNode }) {
             <NavLink to="/reading" className={navLinkClass}>
               Reading
             </NavLink>
+            <NavLink to="/analytics" className={navLinkClass}>
+              Analytics
+            </NavLink>
           </nav>
           <UserMenu />
         </div>

@@ -22,7 +22,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { authApi } from "@/services/api/auth";
 import { authStorage } from "@/utils/authStorage";
 
-const fakeUser = { id: 1, email: "cole@example.com", name: "Cole", picture_url: null };
+const fakeUser = { id: 1, email: "cole@example.com", name: "Cole", picture_url: null, dashboard_widgets: [] };
 
 describe("RequireAuth", () => {
   it("shows a login prompt naming the feature when logged out", async () => {

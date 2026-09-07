@@ -248,7 +248,8 @@ falante/
 | 8. Reading Helper (word highlighting, save-to-vocabulary, verb-form recognition) | ✅ Done |
 | 9. Production-readiness (rate limiting, prod Docker image, Postgres verified) | ✅ Done |
 | 10. Real accounts / login (Google Sign-In, per-user data) | ✅ Done |
-| 11. Progress Analytics | Next |
+| 11. Progress Analytics (5 charts, dedicated page + dashboard customization) | ✅ Done |
+| 12. AI Study Assistant | Next |
 | 12. AI Study Assistant | Planned |
 | 13. Sentence mining | Planned |
 | 14. Anki-style import/export | Planned |

@@ -10,6 +10,7 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   loginWithGoogleIdToken: (idToken: string) => Promise<void>;
   logout: () => void;
+  updateDashboardWidgets: (widgets: string[]) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -55,9 +56,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }
 
+  async function updateDashboardWidgets(widgets: string[]) {
+    const updatedUser = await authApi.updateDashboardWidgets(widgets);
+    setUser(updatedUser);
+  }
+
   return (
     <AuthContext.Provider
-      value={{ user, isLoading, isAuthenticated: user !== null, loginWithGoogleIdToken, logout }}
+      value={{
+        user,
+        isLoading,
+        isAuthenticated: user !== null,
+        loginWithGoogleIdToken,
+        logout,
+        updateDashboardWidgets,
+      }}
     >
       {children}
     </AuthContext.Provider>

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import date
+
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -78,3 +80,41 @@ class VocabularyRepository:
         )
         counts = dict(self.db.execute(stmt).all())
         return {level: counts.get(level, 0) for level in range(6)}
+
+    def count_by_day(self, start_date: date | None) -> list[tuple[str, int]]:
+        """Rows added per day — the raw material for the vocabulary growth chart."""
+        stmt = select(func.date(Vocabulary.created_at), func.count()).where(
+            Vocabulary.user_id == self.user_id
+        )
+        if start_date is not None:
+            stmt = stmt.where(Vocabulary.created_at >= start_date)
+        stmt = stmt.group_by(func.date(Vocabulary.created_at)).order_by(
+            func.date(Vocabulary.created_at)
+        )
+        return list(self.db.execute(stmt).all())
+
+    def count_before(self, start_date: date) -> int:
+        """
+        How many words existed before the visible range starts — needed so
+        a filtered chart (e.g. "last 30 days") shows a correct running
+        total instead of restarting from zero at the window's edge.
+        """
+        stmt = (
+            select(func.count())
+            .select_from(Vocabulary)
+            .where(Vocabulary.user_id == self.user_id, Vocabulary.created_at < start_date)
+        )
+        return self.db.execute(stmt).scalar_one()
+
+    def list_id_and_created_date(self) -> list[tuple[int, date]]:
+        """
+        Every word's id + creation date, full history regardless of any
+        display range — used to replay mastery level changes chronologically
+        for the mastery trend chart, which needs the complete history to
+        compute an accurate starting point for any requested window.
+        """
+        stmt = select(Vocabulary.id, func.date(Vocabulary.created_at)).where(
+            Vocabulary.user_id == self.user_id
+        )
+        rows = self.db.execute(stmt).all()
+        return [(vid, d if isinstance(d, date) else date.fromisoformat(d)) for vid, d in rows]

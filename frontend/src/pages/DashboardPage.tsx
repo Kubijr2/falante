@@ -1,12 +1,24 @@
+import { Suspense, lazy } from "react";
+
 import { LoginButton } from "@/components/auth/LoginButton";
 import { Badge } from "@/components/ui/Badge";
+import { CustomizeDashboard } from "@/components/dashboard/CustomizeDashboard";
 import { MasteryBreakdown } from "@/components/dashboard/MasteryBreakdown";
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { RecentlyLearned } from "@/components/dashboard/RecentlyLearned";
 import { StatsGrid } from "@/components/dashboard/StatsGrid";
 import { StreakCard } from "@/components/dashboard/StreakCard";
 import { useAuth } from "@/context/AuthContext";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import { useDashboard } from "@/hooks/useDashboard";
+import type { WidgetId } from "@/types/analytics";
+
+// recharts (pulled in transitively here) is only needed by someone who's
+// actually pinned a chart — lazy-loading keeps it out of the bundle every
+// other visitor to this page (which is the homepage) has to download.
+const PinnedWidgets = lazy(() =>
+  import("@/components/dashboard/PinnedWidgets").then((m) => ({ default: m.PinnedWidgets }))
+);
 
 // Deliberately flavorful example words (not "word1, word2") — this doubles
 // as a small, honest preview of what saving real vocabulary looks like.
@@ -61,6 +73,12 @@ function PublicHome() {
 
 function PersonalDashboard() {
   const { data, isLoading, isError } = useDashboard();
+  const { user } = useAuth();
+  const pinnedWidgets = (user?.dashboard_widgets ?? []) as WidgetId[];
+  // Only fetched when at least one widget is actually pinned — no point
+  // paying for the analytics query (which does real work, including the
+  // mastery replay) on every dashboard load if nothing here uses it.
+  const { data: analyticsData } = useAnalytics("30d", pinnedWidgets.length > 0);
 
   if (isLoading) {
     return (
@@ -85,9 +103,12 @@ function PersonalDashboard() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-2xl">Dashboard</h1>
-        <QuickActions dueToday={data.due_today} />
+        <div className="flex gap-2">
+          <QuickActions dueToday={data.due_today} />
+          <CustomizeDashboard />
+        </div>
       </div>
 
       <StreakCard streak={data.streak} />
@@ -101,6 +122,16 @@ function PersonalDashboard() {
         <MasteryBreakdown distribution={data.mastery_distribution} />
         <RecentlyLearned words={data.recently_learned} />
       </div>
+
+      {pinnedWidgets.length > 0 && analyticsData && (
+        <Suspense
+          fallback={
+            <div className="h-32 animate-pulse rounded-card border border-border dark:border-border-dark" />
+          }
+        >
+          <PinnedWidgets widgetIds={pinnedWidgets} data={analyticsData} />
+        </Suspense>
+      )}
     </div>
   );
 }
