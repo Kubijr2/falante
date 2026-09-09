@@ -9,6 +9,7 @@ from app.api.v1 import (
     dashboard,
     flashcards,
     grammar,
+    study_assistant,
     tutor,
     verbs,
     vocabulary,
@@ -54,6 +55,7 @@ app.include_router(verbs.router, prefix=settings.api_v1_prefix)
 app.include_router(tutor.router, prefix=settings.api_v1_prefix)
 app.include_router(writing.router, prefix=settings.api_v1_prefix)
 app.include_router(analytics.router, prefix=settings.api_v1_prefix)
+app.include_router(study_assistant.router, prefix=settings.api_v1_prefix)
 
 
 @app.get("/health")

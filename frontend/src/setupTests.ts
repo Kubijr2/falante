@@ -10,3 +10,7 @@ class ResizeObserverMock {
 }
 
 global.ResizeObserver = ResizeObserverMock;
+
+// jsdom doesn't implement scrollIntoView either, which the Study Assistant's
+// chat panel calls on every new message to keep the latest one in view.
+Element.prototype.scrollIntoView = () => {};

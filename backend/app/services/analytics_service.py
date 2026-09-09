@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from collections import defaultdict
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 from app.repositories.flashcard_repository import FlashcardRepository
 from app.repositories.vocabulary_repository import VocabularyRepository
@@ -26,7 +26,11 @@ class InvalidRangeError(Exception):
 
 def parse_range(range_param: str) -> date | None:
     """Returns the start date a range string implies, or None for "all" (no lower bound)."""
-    today = date.today()
+    # created_at/reviewed_at are stored in UTC, so the "today" boundary here
+    # must be UTC too — local date.today() can be a day behind UTC (e.g. any
+    # evening in a UTC-negative timezone), which silently drops same-day
+    # activity from every range filter and from the mastery trend below.
+    today = datetime.now(timezone.utc).date()
     if range_param == "7d":
         return today - timedelta(days=7)
     if range_param == "30d":
@@ -113,7 +117,7 @@ class AnalyticsService:
             reviews_by_date[reviewed_date].append((vocab_id, result))
 
         first_day = min(vocab_created_by_date.keys())
-        last_day = date.today()
+        last_day = datetime.now(timezone.utc).date()
 
         mastery: dict[int, int] = {}
         result: list[dict] = []

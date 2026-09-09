@@ -81,6 +81,15 @@ class VocabularyRepository:
         counts = dict(self.db.execute(stmt).all())
         return {level: counts.get(level, 0) for level in range(6)}
 
+    def lowest_mastery_words(self, limit: int) -> list[Vocabulary]:
+        stmt = (
+            select(Vocabulary)
+            .where(Vocabulary.user_id == self.user_id)
+            .order_by(Vocabulary.mastery_level.asc(), Vocabulary.created_at.desc())
+            .limit(limit)
+        )
+        return list(self.db.execute(stmt).scalars().all())
+
     def count_by_day(self, start_date: date | None) -> list[tuple[str, int]]:
         """Rows added per day — the raw material for the vocabulary growth chart."""
         stmt = select(func.date(Vocabulary.created_at), func.count()).where(

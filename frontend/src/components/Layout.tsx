@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { NavLink } from "react-router-dom";
-
+import { FloatingChatBubble } from "@/components/study-assistant/FloatingChatBubble";
 import { UserMenu } from "@/components/auth/UserMenu";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -48,6 +48,7 @@ export function Layout({ children }: { children: ReactNode }) {
         </div>
       </header>
       <main className="mx-auto max-w-5xl px-6 py-8">{children}</main>
+      <FloatingChatBubble />
     </div>
   );
 }
